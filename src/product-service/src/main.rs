@@ -109,8 +109,7 @@ async fn delete_product(
     Ok(HttpResponse::Ok().body(""))
 }
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+fn product_setup() -> web::Data<AppState> {
     let products = vec![
         Product {
             id: 1,
@@ -184,9 +183,14 @@ async fn main() -> std::io::Result<()> {
         }
     ];
 
-    let product_state = web::Data::new(AppState {
+    return web::Data::new(AppState {
         products: Mutex::new(products.to_vec()),
-    });
+    })
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let product_state = product_setup();
 
     println!("Listening on http://0.0.0.0:3002");
 
@@ -230,4 +234,22 @@ struct Product {
 #[derive(Deserialize)]
 struct ProductInfo {
     product_id: i32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{ 
+        web,
+        http
+    };
+
+    #[actix_web::test]
+    async fn test_get_products() {
+        let data: web::Data<AppState> = product_setup();
+
+        if let Ok(resp) = get_products(data).await {
+            assert_eq!(resp.status(), http::StatusCode::OK) 
+        }
+    }
 }
