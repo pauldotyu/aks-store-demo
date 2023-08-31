@@ -53,6 +53,7 @@ jobs:
         with:
           context: src/virtual-worker
           file: src/virtual-worker/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ steps.set-variables.outputs.REPOSITORY }}/${{ steps.set-variables.outputs.IMAGE }}:latest
