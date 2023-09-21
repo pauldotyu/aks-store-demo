@@ -3,7 +3,7 @@ name: package-virtual-customer
 on:
   push:
     branches:
-      - 'main'
+      - 'demo/flux-image-update'
     paths:
       - 'src/virtual-customer/**'
 

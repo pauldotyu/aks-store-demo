@@ -3,7 +3,7 @@ name: package-order-service
 on:
   push:
     branches:
-      - 'main'
+      - 'demo/flux-image-update'
     paths:
       - 'src/order-service/**'
 

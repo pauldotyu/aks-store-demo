@@ -3,7 +3,7 @@ name: package-makeline-service
 on:
   push:
     branches:
-      - 'main'
+      - 'demo/flux-image-update'
     paths:
       - 'src/makeline-service/**'
 

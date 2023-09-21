@@ -3,7 +3,7 @@ name: package-store-front
 on:
   push:
     branches:
-      - 'main'
+      - 'demo/flux-image-update'
     paths:
       - 'src/store-front/**'
 

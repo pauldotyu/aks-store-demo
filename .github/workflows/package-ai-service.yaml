@@ -3,7 +3,7 @@ name: package-ai-service
 on:
   push:
     branches:
-      - 'main'
+      - 'demo/flux-image-update'
     paths:
       - 'src/ai-service/**'
 

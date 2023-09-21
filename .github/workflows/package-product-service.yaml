@@ -3,7 +3,7 @@ name: package-product-service
 on:
   push:
     branches:
-      - 'main'
+      - 'demo/flux-image-update'
     paths:
       - 'src/product-service/**'
 

@@ -3,7 +3,7 @@ name: package-store-admin
 on:
   push:
     branches:
-      - 'main'
+      - 'demo/flux-image-update'
     paths:
       - 'src/store-admin/**'
 
