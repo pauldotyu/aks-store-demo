@@ -18,13 +18,13 @@ jobs:
       matrix:
         apps: [
           ai-service,
-          makeline-service,
-          order-service,
-          product-service,
-          store-admin,
-          store-front,
-          virtual-customer,
-          virtual-worker
+          # makeline-service,
+          # order-service,
+          # product-service,
+          # store-admin,
+          # store-front,
+          # virtual-customer,
+          # virtual-worker
         ]
 
     steps:
