@@ -1,0 +1,87 @@
+name: patch-container-images
+
+on:
+  schedule:
+    - cron: "30 0 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        apps:
+          - "store-front"
+
+    steps:
+      - name: Authenticate with GitHub CLI
+        run: |
+          gh auth login --with-token <<< "${{ github.token }}"
+
+      - name: Get the latest tag
+        id: semver_tag
+        run: |
+          tag=$(gh api user/packages/container/aks-store-demo%2F${{ matrix.apps }}/versions --jq '.[0] | .metadata.container.tags[0]')
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: Bump the tag
+        id: bump_tag
+        run: |
+          tag=$(echo ${{ steps.semver_tag.outputs.tag }} | awk -F. -v OFS=. '{$NF = $NF + 1;} 1')
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          format: "table"
+          ignore-unfixed: true
+          vuln-type: "os"
+          image-ref: ghcr.io/${{ github.repository }}/${{ matrix.apps }}:latest
+
+      - name: Generate Trivy Report
+        uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
+        with:
+          scan-type: "image"
+          format: "json"
+          output: "report.json"
+          ignore-unfixed: true
+          vuln-type: "os"
+          image-ref: ghcr.io/${{ github.repository }}/${{ matrix.apps }}:latest
+
+      - name: Check Vuln Count
+        id: vuln_count
+        run: |
+          report_file="report.json"
+          vuln_count=$(jq 'if .Results then [.Results[] | select(.Class=="os-pkgs" and .Vulnerabilities!=null) | .Vulnerabilities[]] | length else 0 end' "$report_file")
+          echo "vuln_count=$vuln_count" >> $GITHUB_OUTPUT
+
+      - name: Copa Action
+        if: steps.vuln_count.outputs.vuln_count != '0'
+        id: copa
+        uses: project-copacetic/copa-action@3843e22efdca421adb37aa8dec103a0f1db68544 # v1.2.1
+        with:
+          image: ghcr.io/${{ github.repository }}/${{ matrix.apps }}:latest
+          image-report: "report.json"
+          patched-tag: "patched"
+
+      - name: Login to GHCR
+        if: steps.copa.conclusion == 'success'
+        id: login
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Push patched image
+        if: steps.login.conclusion == 'success'
+        run: |
+          docker tag ${{ steps.copa.outputs.patched-image }} ghcr.io/${{ github.repository }}/${{ matrix.apps }}:${{ steps.bump_tag.outputs.tag }}
+          docker push ghcr.io/${{ github.repository }}/${{ matrix.apps }}:${{ steps.bump_tag.outputs.tag }}
