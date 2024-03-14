@@ -18,8 +18,8 @@ images:
   newName: ghcr.io/pauldotyu/aks-store-demo/store-admin
   newTag: 1.2.0
 - name: ghcr.io/azure-samples/aks-store-demo/store-front
-  newName: ghcr.io/pauldotyu/aks-store-demo/store-front
-  newTag: 1.2.0
+  newName: ghcr.io/pauldotyu/aks-store-demo/store-front # {"$imagepolicy": "flux-system:store-front:name"}
+  newTag: 1.2.1 # {"$imagepolicy": "flux-system:store-front:tag"}
 - name: ghcr.io/azure-samples/aks-store-demo/virtual-customer
   newName: ghcr.io/pauldotyu/aks-store-demo/virtual-customer
   newTag: 1.2.0
