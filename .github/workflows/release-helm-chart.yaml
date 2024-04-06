@@ -1,8 +1,8 @@
 name: release_helm_chart
 
 on:
-  repository_dispatch:
-    types: [ create-release ]
+  push:
+    tags: '*'
 
 permissions:
   id-token: write
