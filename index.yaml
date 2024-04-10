@@ -3,9 +3,9 @@ entries:
   aks-store-demo-chart:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2024-04-10T17:13:21.915329177Z"
+    created: "2024-04-10T17:29:27.145346723Z"
     description: A Helm chart for deploying the aks-store-demo app to Kubernetes
-    digest: 276c6f9e5578306df018a6233ca21b4024959af63cdd225e80006855f68d006d
+    digest: 7daa6485f8bef79becb1f3f9078c14ec13e615b1f18e69f296b435f2e2aa39b0
     name: aks-store-demo-chart
     type: application
     urls:
@@ -21,4 +21,4 @@ entries:
     urls:
     - https://pauldotyu.github.io/aks-store-demo/aks-store-demo-chart-1.0.0.tgz
     version: 1.0.0
-generated: "2024-04-10T17:13:21.913862947Z"
+generated: "2024-04-10T17:29:27.144603064Z"
