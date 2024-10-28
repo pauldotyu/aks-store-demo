@@ -5,38 +5,32 @@ metadata:
 spec:
   destination:
     name: ''
-    namespace: pets
-    server: 'https://kubernetes.default.svc'
+    namespace: ''
+    server: https://kubernetes.default.svc
   source:
-    path: charts/aks-store-demo
-    repoURL: 'https://github.com/pauldotyu/aks-store-demo'
+    path: kustomize/overlays/dev
+    repoURL: https://github.com/pauldotyu/aks-store-demo
     targetRevision: bigbertha
-    helm:
-      parameters:
-        - name: aiService.image.repository
-          value: ghcr.io/pauldotyu/aks-store-demo/ai-service
-        - name: makelineService.image.repository
-          value: ghcr.io/pauldotyu/aks-store-demo/makeline-service
-        - name: orderService.image.repository
-          value: ghcr.io/pauldotyu/aks-store-demo/order-service
-        - name: productService.image.repository
-          value: ghcr.io/pauldotyu/aks-store-demo/product-service
-        - name: storeAdmin.image.repository
-          value: ghcr.io/pauldotyu/aks-store-demo/store-admin
-        - name: storeAdmin.serviceType
-          value: ClusterIP
-        - name: storeFront.image.repository
-          value: ghcr.io/pauldotyu/aks-store-demo/store-front
-        - name: storeFront.serviceType
-          value: ClusterIP
-        - name: virtualCustomer.image.repository
-          value: ghcr.io/pauldotyu/aks-store-demo/virtual-customer
-        - name: virtualWorker.image.repository
-          value: ghcr.io/pauldotyu/aks-store-demo/virtual-worker
+    kustomize:
+      images:
+        - >-
+          ghcr.io/azure-samples/aks-store-demo/makeline-service=ghcr.io/pauldotyu/aks-store-demo/makeline-service:1.5.0
+        - >-
+          ghcr.io/azure-samples/aks-store-demo/order-service=ghcr.io/pauldotyu/aks-store-demo/order-service:1.5.0
+        - >-
+          ghcr.io/azure-samples/aks-store-demo/product-service=ghcr.io/pauldotyu/aks-store-demo/product-service:1.5.0
+        - >-
+          ghcr.io/azure-samples/aks-store-demo/store-admin=ghcr.io/pauldotyu/aks-store-demo/store-admin:1.5.0
+        - >-
+          ghcr.io/azure-samples/aks-store-demo/store-front=ghcr.io/pauldotyu/aks-store-demo/store-front:1.5.0
+        - >-
+          ghcr.io/azure-samples/aks-store-demo/virtual-customer=ghcr.io/pauldotyu/aks-store-demo/virtual-customer:1.5.0
+        - >-
+          ghcr.io/azure-samples/aks-store-demo/virtual-worker=ghcr.io/pauldotyu/aks-store-demo/virtual-worker:1.5.0
+      namespace: pets
   sources: []
   project: default
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions: []

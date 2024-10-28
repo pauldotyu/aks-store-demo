@@ -28,4 +28,4 @@ spec:
             memory: 1Mi
           limits:
             cpu: 1m
-            memory: 10Mi
+            memory: 20Mi
