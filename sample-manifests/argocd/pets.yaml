@@ -9,13 +9,13 @@ spec:
     namespace: ""
     server: https://kubernetes.default.svc
   source:
-    path: kustomize/overlays/llmops
+    path: kustomize/overlays/kaito
     repoURL: https://github.com/pauldotyu/aks-store-demo
     targetRevision: bigbertha
     kustomize:
       images:
         - >-
-          ghcr.io/azure-samples/aks-store-demo/ai-service=ghcr.io/pauldotyu/aks-store-demo/ai-service:1.5.1
+          ghcr.io/azure-samples/aks-store-demo/ai-service=ghcr.io/pauldotyu/aks-store-demo/ai-service:1.5.2
         - >-
           ghcr.io/azure-samples/aks-store-demo/makeline-service=ghcr.io/pauldotyu/aks-store-demo/makeline-service:1.5.0
         - >-
