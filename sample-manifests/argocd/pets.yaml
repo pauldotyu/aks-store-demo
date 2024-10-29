@@ -9,7 +9,7 @@ spec:
     namespace: ""
     server: https://kubernetes.default.svc
   source:
-    path: kustomize/overlays/dev
+    path: kustomize/overlays/llmops
     repoURL: https://github.com/pauldotyu/aks-store-demo
     targetRevision: bigbertha
     kustomize:
