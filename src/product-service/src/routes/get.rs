@@ -24,3 +24,10 @@ pub async fn get_products(data: web::Data<AppState>) -> Result<HttpResponse, Err
     let products = data.products.lock().unwrap();
     Ok(HttpResponse::Ok().json(products.to_vec()))
 }
+
+pub async fn get_metrics(data: web::Data<AppState>) -> Result<HttpResponse, Error> {
+    let products = data.products.lock().unwrap();
+    let total_product_count = products.len();
+    let metrics = "# HELP total_product_count The total number of products in the database\n# TYPE total_product_count gauge\ntotal_product_count ".to_string() + &total_product_count.to_string() + "\n";
+    Ok(HttpResponse::Ok().body(metrics))
+}
