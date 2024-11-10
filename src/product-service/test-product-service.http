@@ -802,3 +802,7 @@ Content-Type: application/json
     "image": "/placeholder.jpg"
   }
 ]
+
+### Get tuning dataset
+GET /ai/tuning/dataset
+Host: localhost:3002

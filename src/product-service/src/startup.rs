@@ -34,6 +34,7 @@ pub fn run(mut settings: Settings) -> Result<Server, std::io::Error> {
             .route("/health", web::head().to(health))
             .route("/ai/health", web::get().to(ai_health))
             .route("/ai/health", web::head().to(ai_health))
+            .route("/ai/tuning/dataset", web::get().to(ai_tuning_dataset))
             .route(
                 "/ai/generate/description",
                 web::post().to(ai_generate_description),

@@ -9,14 +9,11 @@ pub async fn get_product(
     let products = data.products.lock().unwrap();
 
     // find product by id in products
-    let index = products
-        .iter()
-        .position(|p| p.id == path.product_id);
+    let index = products.iter().position(|p| p.id == path.product_id);
     if let Some(i) = index {
-        return Ok(HttpResponse::Ok().json(products[i].clone()))
-    }
-    else {
-        return Ok(HttpResponse::NotFound().body("Product not found"))
+        return Ok(HttpResponse::Ok().json(products[i].clone()));
+    } else {
+        return Ok(HttpResponse::NotFound().body("Product not found"));
     }
 }
 
