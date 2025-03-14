@@ -1,7 +1,7 @@
 services:
   rabbitmq:
     image: rabbitmq:3.13.2-management-alpine
-    container_name: 'rabbitmq'
+    container_name: "rabbitmq"
     restart: always
     environment:
       - "RABBITMQ_DEFAULT_USER=username"
@@ -20,12 +20,20 @@ services:
       - backend_services
   order-service:
     build: src/order-service
-    container_name: 'order-service'
+    container_name: "order-service"
     restart: always
     ports:
       - 3000:3000
     healthcheck:
-      test: ["CMD", "wget", "-O", "/dev/null", "-q", "http://order-service:3000/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "-O",
+          "/dev/null",
+          "-q",
+          "http://order-service:3000/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -43,12 +51,20 @@ services:
         condition: service_healthy
   product-service:
     build: src/product-service
-    container_name: 'product-service'
+    container_name: "product-service"
     restart: always
     ports:
       - 3002:3002
     healthcheck:
-      test: ["CMD", "wget", "-O", "/dev/null", "-q", "http://product-service:3002/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "-O",
+          "/dev/null",
+          "-q",
+          "http://product-service:3002/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -58,18 +74,16 @@ services:
       - backend_services
   store-front:
     build: src/store-front
-    container_name: 'store-front'
+    container_name: "store-front"
     restart: always
     ports:
       - 8080:8080
     healthcheck:
-      test: ["CMD", "wget", "-O", "/dev/null", "-q", "http://store-front:80/health"]
+      test:
+        ["CMD", "wget", "-O", "/dev/null", "-q", "http://store-front:80/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-    environment:
-      - VUE_APP_PRODUCT_SERVICE_URL=http://product-service:3002/
-      - VUE_APP_ORDER_SERVICE_URL=http://order-service:3000/
     networks:
       - backend_services
     depends_on:

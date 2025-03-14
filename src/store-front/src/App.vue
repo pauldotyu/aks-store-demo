@@ -1,110 +1,32 @@
 <template>
-  <TopNav :cartItemCount="cartItemCount"/>
-  <router-view
-    :products="products"
-    :cartItems="cartItems"
-    @addToCart="addToCart"
-    @removeFromCart="removeFromCart"
-    @submitOrder="submitOrder"
-  ></router-view>
+  <TopNav />
+  <RouterView />
 </template>
 
-<script>
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { RouterView } from 'vue-router'
+import { useProductStore } from '@/stores'
+import type { Product } from '@/types'
 import TopNav from './components/TopNav.vue'
 
-export default {
-  name: 'App',
-  components: {
-    TopNav
-  },
-  data() {
-    return {
-      cartItems: [],
-      products: [],
-    }
-  },
-  computed: {
-    cartItemCount() {
-      return this.cartItems.reduce((total, item) => {
-        return total + item.quantity
-      }, 0)
-    }
-  },
-  mounted() {
-    this.getProducts()
-  },
-  methods: {
-    getProducts() {
-      fetch('/products')
-        .then(response => response.json())
-        .then(products => {
-          console.log('success getting proxy products')
-          this.products = products
-        })
-        .catch(error => {
-          console.log(error)
-          alert('Error occurred while fetching products')
-        })
-    },
-    addToCart({ productId, quantity }) {
-      // check if the product is already in the cart
-      const existingCartItem = this.cartItems.find(
-        item => item.product.id == productId
-      )
-      if (existingCartItem) {
-        // if it is, increment the quantity
-        existingCartItem.quantity += quantity
-      } else {
-        // if not, find the product, and add it with quantity to the cart
-        const product = this.products.find(product => product.id == productId)
-        this.cartItems.push({ product, quantity })
-      }
-    },
-    removeFromCart(index) {
-      this.cartItems.splice(index, 1)
-    },
-    submitOrder() {
-      // get the order-service URL from an environment variable
-      // const orderServiceUrl = process.env.VUE_APP_ORDER_SERVICE_URL;
+const productStore = useProductStore()
 
-      // create an order object
-      const order = {
-        customerId: Math.floor(Math.random() * 10000000000).toString(),
-        items: this.cartItems.map(item => {
-          return {
-            productId: item.product.id,
-            quantity: item.quantity,
-            price: item.product.price
-          }
-        })
-      }
-
-      console.log(JSON.stringify(order));
-
-      // call the order-service using fetch
-      fetch(`/order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(order)
+onMounted(() => {
+  if (productStore.count === 0) {
+    console.log('Fetching products')
+    fetch('/api/products')
+      .then((response) => response.json())
+      .then((data: Product[]) => {
+        productStore.addProducts(data)
+        console.log(`Fetched ${data.length} products`)
       })
-        .then(response => {
-          console.log(response)
-          if (!response.ok) {
-            alert('Error occurred while submitting order')
-          } else {
-            this.cartItems = []
-            alert('Order submitted successfully')
-          }
-        })
-        .catch(error => {
-          console.log(error)
-          alert('Error occurred while submitting order')
-        })
-    }
-  },
-}
+      .catch((error) => {
+        console.log(error)
+        alert('Error occurred while fetching products')
+      })
+  }
+})
 </script>
 
 <style>

@@ -1,5 +1,5 @@
 <template>
-  <br>
+  <br />
   <div class="product-detail" v-if="productExists">
     <div class="product-image">
       <img :src="product.image" :alt="product.name" />
@@ -10,7 +10,9 @@
       <p>{{ product.description }}</p>
       <div class="product-controls">
         <p>
-          <b>Price: <span class="price">{{ product.price }}</span></b>
+          <b
+            >Price: <span class="price">{{ product.price }}</span></b
+          >
         </p>
         <input type="number" v-model="quantity" min="1" class="quantity-input" />
         <button @click="addToCart">Add to Cart</button>
@@ -18,43 +20,45 @@
     </div>
   </div>
   <div class="product-detail" v-else>
-    <img src="../assets/404.jpg" alt="Product not found" />
-    <h3>Opps! That product was not found...</h3>
+    <div class="product-image">
+      <img src="../assets/404.jpg" alt="Product not found" />
+    </div>
+    <div class="product-info">
+      <h2>Oops! That product was not found...</h2>
+    </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ProductDetail',
-  props: ['products'],
-  data() {
-    return {
-      quantity: 1
-    }
-  },
-  computed: {
-    product() {
-      return this.products.find(product => product.id == this.$route.params.id);
-    },
-    productExists() {
-      return !!this.product;
-    }
-  },
-  methods: {
-    addToCart() {
-      // Add the product and quantity to the cart
-      this.$emit('addToCart', {
-        productId: this.product.id,
-        quantity: this.quantity
-      })
-    }
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { useProductStore, useCartStore } from '@/stores'
+import type { Product, CartItem } from '@/types'
+
+const productStore = useProductStore()
+const cartStore = useCartStore()
+const route = useRoute()
+const productId = computed(() => route.params.id as string)
+
+const product = computed(() => {
+  return productStore.products.find((p: Product) => p.id == productId.value)!
+})
+
+const quantity = ref(1)
+const productExists = computed(() => !!product.value)
+
+const addToCart = () => {
+  const cartItem: CartItem = {
+    product: product.value,
+    quantity: quantity.value,
   }
+  cartStore.addItem(cartItem)
 }
 </script>
 
 <style scoped>
 a {
-  color: #0000FF;
+  color: #0000ff;
   text-decoration: underline;
 }
 
