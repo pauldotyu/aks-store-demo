@@ -1,118 +1,45 @@
 <template>
   <TopNav />
-  <router-view
-    :orders="orders"
-    :products="products"
-    @fetchOrders="fetchOrders"
-    @completeOrder="completeOrder"
-    @addProductsToList="addProductsToList"
-    @updateProductInList="updateProductInList"
-    @getProduct="getProduct"
-    @getProducts="getProducts"
-  ></router-view>
+  <router-view />
 </template>
 
-<script>
-import TopNav from './components/TopNav.vue';
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { useProductStore, useOrderStore } from '@/stores'
+import type { Product, Order } from '@/types'
+import TopNav from './components/TopNav.vue'
 
-const productServiceUrl = "/products/";
-const singleProductServiceUrl = "/product/";
-const makelineServiceUrl = "/makeline/";
+const productStore = useProductStore()
+const orderStore = useOrderStore()
 
-export default {
-  name: 'App',
-  components: {
-    TopNav
-  },
-  data() {
-    return {
-      orders: [],
-      products: [],
-      product: {}
-    }
-  },
-  mounted() {
-    this.getProducts();
-  },
-  methods: {
-    async addProductsToList(newProduct) {
-      this.products.push(newProduct);
-    },
-    async updateProductInList(updatedProduct) {
-      const index = this.products.findIndex(product => product.id === updatedProduct.id);
-      this.products[index] = updatedProduct;
-    },
-    async getProduct(id) {
-      fetch(`${singleProductServiceUrl}${id}`)
-        .then(response => response.json())
-        .then(product => {
-          this.product.id = product.id
-          this.product.name = product.name
-          this.product.image = product.image
-          this.product.description = product.description
-          this.product.price = product.price
-        })
-        .catch(error => {
-          console.log(error)
-          alert('Error occurred while fetching product')
-        })
-    },
-    async getProducts() {
-      fetch(`${productServiceUrl}`)
-        .then(response => response.json())
-        .then(products => {
-          this.products = products
-        })
-        .catch(error => {
-          console.log(error)
-          alert('Error occurred while fetching products')
-        })
-    },
-    async fetchOrders() {
-      await fetch(`${makelineServiceUrl}order/fetch`)
-        .then(response => response.json())
-        .then(data => {
-          console.log(data)
-          if (data) {
-            this.orders = data;
-          } else {
-            console.log('No orders from server');
-          }
-        })
-        .catch(error => console.error(error));
-    },
-    async completeOrder(orderId) {      
-      // get the order and update the status
-      let order = this.orders.find(order => order.orderId === orderId);
-      order.status = 1;
-
-      let orderObject = JSON.stringify(order)
-      console.log(orderObject);
-
-      await fetch(`${makelineServiceUrl}order`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: orderObject
+onMounted(() => {
+  if (productStore.count === 0) {
+    console.log('Fetching products')
+    fetch('/api/products')
+      .then((response) => response.json())
+      .then((data: Product[]) => {
+        productStore.addProducts(data)
+        console.log(`Fetched ${data.length} products`)
       })
-        .then(response => {
-          if (!response.ok) {
-            alert('Error occurred while processing order')
-          } else {
-            alert('Order successfully processed')
-            // remove the order from the list
-            this.orders = this.orders.filter(order => order.orderId !== orderId);
-            this.$router.go(-1);
-          }
-        })
-        .catch(error => {
-          console.log(error)
-          alert('Error occurred while processing order')
-        })
-    }
-  },
-}
+      .catch((error) => {
+        console.log(error)
+        alert('Error occurred while fetching products')
+      })
+  }
+  if (orderStore.count === 0) {
+    console.log('Fetching orders')
+    fetch('/api/makeline/order/fetch')
+      .then((response) => response.json())
+      .then((data: Order[]) => {
+        orderStore.addOrders(data)
+        console.log(`Fetched ${data.length} orders`)
+      })
+      .catch((error) => {
+        console.log(error)
+        alert('Error occurred while fetching orders')
+      })
+  }
+})
 </script>
 
 <style>

@@ -14,8 +14,10 @@
           <th>Price</th>
         </tr>
       </thead>
-      <tr v-for="product in products" :key="product.productId">
-        <td><router-link :to="`/product/${product.id}`">{{ product.id }}</router-link></td>
+      <tr v-for="product in products" :key="product.id">
+        <td>
+          <router-link :to="`/product/${product.id}`">{{ product.id }}</router-link>
+        </td>
         <td>{{ product.name }}</td>
         <td>{{ product.description }}</td>
         <td>{{ product.price }}</td>
@@ -24,19 +26,18 @@
   </div>
 </template>
 
-<script>
-  export default {
-    name: 'ProductList',
-    props: ['products'],
-    mounted() {
-      this.$emit('getProducts')
-    }
-  }
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useProductStore } from '@/stores'
+
+const productStore = useProductStore()
+
+const products = computed(() => productStore.products)
 </script>
 
 <style scoped>
 a {
-  color: #0000FF;
+  color: #0000ff;
   text-decoration: underline;
 }
 

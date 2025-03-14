@@ -1,18 +1,18 @@
 <template>
   <div class="action-button">
-    <router-link :to="`/product/${this.$route.params.id}/edit`">
+    <router-link :to="`/product/${productId}/edit`">
       <button class="button">Edit Product</button>
     </router-link>
   </div>
-  <br/>
+  <br />
   <div class="product-detail" v-if="productExists">
     <div class="product-image">
-      <img :src="product.image" alt="Product Image">
+      <img :src="product?.image" alt="Product Image" />
     </div>
     <div class="product-info">
-      <h2>{{ product.name }} - {{ product.price }}</h2>
-      <small>Product ID: {{ product.id }}</small>
-      <p>{{ product.description }}</p>
+      <h2>{{ product?.name }} - {{ product?.price }}</h2>
+      <small>Product ID: {{ product?.id }}</small>
+      <p>{{ product?.description }}</p>
     </div>
   </div>
   <div class="product-detail" v-else>
@@ -20,25 +20,31 @@
   </div>
 </template>
 
-<script>
-  export default {
-    name: 'ProductDetail',
-    props: ['products'],
-    computed: {
-      product() {
-        return this.products.find(product => product.id == this.$route.params.id)
-      },
-      productExists() {
-        return !!this.product
-      }
-    },
-  }
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useProductStore } from '@/stores'
+
+const productStore = useProductStore()
+const route = useRoute()
+const productId = computed(() => route.params.id as string)
+
+const product = computed(() => {
+  return productStore.products.find((product) => product.id == productId.value)
+})
+
+const productExists = computed(() => !!product.value)
 </script>
 
 <style scoped>
 a {
-  color: #0000FF;
+  color: #0000ff;
   text-decoration: underline;
+}
+
+.product-detail {
+  flex: 1;
+  display: flex;
 }
 
 .product-image {

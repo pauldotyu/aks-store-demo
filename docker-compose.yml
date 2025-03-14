@@ -125,9 +125,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    environment:
-      - VUE_APP_PRODUCT_SERVICE_URL=http://product-service:3002/
-      - VUE_APP_MAKELINE_SERVICE_URL=http://makeline-service:3001/
     networks:
       - backend_services
     depends_on:
