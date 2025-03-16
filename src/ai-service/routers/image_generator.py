@@ -1,36 +1,53 @@
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-from openai import AzureOpenAI
-from fastapi import APIRouter, Request, status
-from fastapi.responses import Response, JSONResponse
-from typing import Any, List, Dict
-import json
 import os
+import json
+import logging
+from typing import Any, List, Dict
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from dotenv import load_dotenv
+from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import Response, JSONResponse
+from openai import AzureOpenAI
+from pydantic import BaseModel
 
-# Define the image API router
-image: APIRouter = APIRouter(prefix="/generate", tags=["generate"])
+logger = logging.getLogger(__name__)
 
-# Define the Product class
-class Product:
-    def __init__(self, product: Dict[str, List]) -> None:
-        self.name: str = product["name"]
-        self.description: List[str] = product["description"]
+class ImageRequest(BaseModel):
+    name: str
+    description: str
 
-# Define the post_image endpoint
-@image.post("/image", summary="Get image for a product", operation_id="getImage")
-async def post_image(request: Request) -> JSONResponse:
+# Create router with prefix
+image = APIRouter(
+    prefix="/generate",
+    tags=["generation"]
+)
+
+@image.post("/image", operation_id="generate_image")
+async def generate_image(request: ImageRequest):
+    """
+    Generate a product image based on the product name and description
+    """
     try:
-        # Parse the request body and create a Product object
-        body: dict = await request.json()
-        product: Product = Product(body)
-        name: str = product.name
-        description: List = product.description
+        env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+        if os.path.exists(env_path):
+            logger.info(f"Loading environment from: {env_path}")
+            load_dotenv(dotenv_path=env_path, override=True)
+        else:
+            logger.warning("No .env file found! Using system environment variables.")
 
-        print("Calling OpenAI")
-        
-        api_version = os.environ.get("AZURE_OPENAI_API_VERSION")
         endpoint = os.environ.get("AZURE_OPENAI_DALLE_ENDPOINT") or os.environ.get("AZURE_OPENAI_ENDPOINT")
-        model_deployment_name = os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT_NAME")
+        if not endpoint:
+            raise ValueError("AZURE_OPENAI_DALLE_ENDPOINT or AZURE_OPENAI_ENDPOINT must be provided")
         
+        model_deployment_name = os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT_NAME")
+        if not os.environ.get("AZURE_OPENAI_DALLE_DEPLOYMENT_NAME"):
+            raise ValueError("AZURE_OPENAI_DALLE_DEPLOYMENT_NAME must be provided")
+
+        api_version = os.environ.get("AZURE_OPENAI_API_VERSION")
+        if not api_version:
+            raise ValueError("AZURE_OPENAI_API_VERSION must be provided")
+        
+        name: str = request.name
+        description: List = request.description
         token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
         
         client = AzureOpenAI(
@@ -46,10 +63,7 @@ async def post_image(request: Request) -> JSONResponse:
         )
 
         json_response = json.loads(result.model_dump_json())
-        print(json_response)
 
-        # Return the image as a JSON response
         return JSONResponse(content={"image": json_response["data"][0]["url"]}, status_code=status.HTTP_200_OK)
     except Exception as e:
-        # Return an error message as a JSON response
-        return JSONResponse(content={"error": str(e)}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise HTTPException(status_code=500, detail=f"Error generating image: {str(e)}")

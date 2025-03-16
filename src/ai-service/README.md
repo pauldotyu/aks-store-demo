@@ -31,6 +31,9 @@ export AZURE_OPENAI_DALLE_ENDPOINT= # required if using Azure OpenAI's DALL-E mo
 export AZURE_OPENAI_DALLE_DEPLOYMENT_NAME= # required if using Azure OpenAI's DALL-E model
 export OPENAI_API_KEY= # always required if using OpenAI if using Azure OpenAI, consider use Workload Identity https://learn.microsoft.com/azure/aks/open-ai-secure-access-quickstart
 export OPENAI_ORG_ID= # required if using OpenAI
+export USE_LOCAL_LLM=False # set to True if you are using a local LLM model like Kaito
+export LOCAL_LLM_MODEL_NAME= # if using Kaito, set to the name of the model for the workspace
+export LOCAL_LLM_ENDPOINT= # if using Kaito, set to the http endpoint of the service attached to the workspace
 
 uvicorn main:app --host 127.0.0.1 --port 5001
 ```

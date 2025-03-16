@@ -1,9 +1,9 @@
-from fastapi import FastAPI, status
+import os
 from routers.description_generator import description
 from routers.image_generator import image
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-import os
 
 app = FastAPI(version=os.environ.get("APP_VERSION", "0.1.0"))
 app.include_router(description)
