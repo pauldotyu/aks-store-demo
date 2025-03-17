@@ -1,0 +1,41 @@
+namespace: pets
+useAzureAd: true
+managedIdentityName: mid-securemantis47
+managedIdentityClientId: f8187d4c-8082-4431-a449-28509ccb4df1
+productService:
+  image:
+    repository: acrsecuremantis47.azurecr.io/aks-store-demo/product-service
+storeAdmin:
+  image:
+    repository: acrsecuremantis47.azurecr.io/aks-store-demo/store-admin
+storeFront:
+  image:
+    repository: acrsecuremantis47.azurecr.io/aks-store-demo/store-front
+virtualCustomer:
+  image:
+    repository: acrsecuremantis47.azurecr.io/aks-store-demo/virtual-customer
+virtualWorker:
+  image:
+    repository: acrsecuremantis47.azurecr.io/aks-store-demo/virtual-worker
+aiService:
+  image:
+    repository: acrsecuremantis47.azurecr.io/aks-store-demo/ai-service
+  create: true
+  modelDeploymentName: gpt-35-turbo
+  openAiEndpoint: https://aoai-securemantis47.openai.azure.com/
+  useAzureOpenAi: true
+  openAiDalleEndpoint: https://aoai-securemantis47.openai.azure.com/
+  openAiDalleModelName: dall-e-3
+orderService:
+  image:
+    repository: acrsecuremantis47.azurecr.io/aks-store-demo/order-service
+  queueHost: sb-securemantis47.servicebus.windows.net
+makelineService:
+  image:
+    repository: acrsecuremantis47.azurecr.io/aks-store-demo/makeline-service
+    orderQueueHost: sb-securemantis47.servicebus.windows.net
+  orderDBApi: mongodb
+  orderDBUri: mongodb://db-securemantis47.mongo.cosmos.azure.com:10255/?retryWrites=false
+  orderDBListConnectionStringsUrl: https://management.azure.com/subscriptions/de9002e6-0573-43f4-8cbc-7f644a2631fd/resourceGroups/rg-twopointoh/providers/Microsoft.DocumentDB/databaseAccounts/db-securemantis47/listConnectionStrings?api-version=2021-04-15
+useRabbitMQ: false
+useMongoDB: false
