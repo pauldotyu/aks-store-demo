@@ -1,0 +1,33 @@
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/pkg/
+
+# Git files
+.git/
+.gitignore
+
+# Development and testing
+*_test.go
+/test/
+coverage.*
+*.test
+
+# Editor/IDE files
+.idea/
+.vscode/
+*.swp
+*~
+
+# Documentation and others
+*.md
+/docs/
+LICENSE
+Makefile
+.DS_Store
+tmp/
+*.log

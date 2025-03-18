@@ -1,13 +1,48 @@
-.env
-.git
-.gitignore
+# Python artifacts not already listed
+*.so
 .pytest_cache
-.venv
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-.coverage
-htmlcov/
-.vscode/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.ipynb_checkpoints/
+celerybeat-schedule
+
+# Documentation
+docs/
+*.md
+*.rst
+*.txt
+!requirements.txt
+
+# Build and distribution
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Development files
+setup.py
+tests/
+test_*.py
+.tox/
+Makefile
+docker-compose*.yml
+.pre-commit-config.yaml
+.flake8
+.pylintrc
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+.github/
+
+# Temporary files
+*.swp
+*.swo
+*.tmp
+*.bak
+.DS_Store
+
+# Logs
+logs/
+*.log

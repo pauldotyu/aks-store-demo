@@ -1,1 +1,52 @@
+# Build artifacts
 **/target
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.vscode
+.idea
+*.sublime-*
+*.swp
+*~
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+docs/
+*.md
+
+# Development files
+dev/
+scripts/
+examples/
+tests/
+benches/
+fixtures/
+
+# CI/CD configurations
+.github/
+.gitlab-ci.yml
+.travis.yml
+.azure-pipelines/
+
+# Caches and temporary files
+.cargo/registry/
+.cargo/git/
+**/*.rs.bk
+*.tmp
+*.log
+
+# Environment files (unless needed for production)
+.env
+.env.*
+*.local
+
+# Other
+Dockerfile
+.dockerignore
+docker-compose*.yml
