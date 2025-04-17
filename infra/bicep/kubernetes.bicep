@@ -32,10 +32,7 @@ module managedCluster 'br/public:avm/res/container-service/managed-cluster:0.8.3
     enableAzureMonitorProfileMetrics: logsWorkspaceResourceId != '' ? true : false
     enableContainerInsights: logsWorkspaceResourceId != '' ? true : false
     monitoringWorkspaceResourceId: logsWorkspaceResourceId
-    // temporary workaround since azd has trouble connecting to the cluster when azure rbac is enabled
-    disableLocalAccounts: false
-    enableRBAC: true
-    // end workaround
+    disableLocalAccounts: true
     aadProfile: {
       aadProfileEnableAzureRBAC: true
       aadProfileManaged: true
