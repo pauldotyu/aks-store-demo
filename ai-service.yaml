@@ -25,9 +25,11 @@ spec:
             - name: USE_AZURE_AD # set to False if you are not using workload identity
               value: "True"
             - name: AZURE_OPENAI_DEPLOYMENT_NAME # required if using Azure OpenAI
-              value: ""
+              value: "gpt-5-mini"
             - name: AZURE_OPENAI_ENDPOINT # required if using Azure OpenAI
-              value: ""
+              value: "https://placeholder.openai.azure.com/"
+            - name: TEMPERATURE # optional, set the temperature for the generated descriptions, default is 1 for gpt-5-mini
+              value: "1"
             - name: OPENAI_API_KEY # required if using OpenAI or Azure OpenAI without workload identity
               value: ""
             - name: AZURE_OPENAI_DALLE_ENDPOINT # required if using Azure OpenAI DALL-E

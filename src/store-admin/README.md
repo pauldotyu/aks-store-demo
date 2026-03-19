@@ -26,8 +26,10 @@ If you have access to OpenAI or Azure OpenAI, open the `docker-compose.yml` file
 ```yaml
 environment:
   - USE_AZURE_OPENAI=True # set to False if you are not using Azure OpenAI
-  - AZURE_OPENAI_DEPLOYMENT_NAME= # required if using Azure OpenAI
-  - AZURE_OPENAI_ENDPOINT= # required if using Azure OpenAI
+  - AZURE_OPENAI_DEPLOYMENT_NAME=gpt-5-mini # required if using Azure OpenAI
+  - AZURE_OPENAI_ENDPOINT=https://placeholder.openai.azure.com/ # required if using Azure OpenAI
+  - AZURE_OPENAI_API_VERSION=2024-12-01-preview # required if using Azure OpenAI
+  - TEMPERATURE=1 # optional, set the temperature for the generated descriptions, default is 1 for gpt-5-mini
   - OPENAI_API_KEY= # always required
   - OPENAI_ORG_ID= # required if using OpenAI
 ```

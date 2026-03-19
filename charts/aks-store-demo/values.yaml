@@ -16,7 +16,7 @@ managedIdentityClientId: "" # client ID of the managed identity to use for the s
 aiService:
   # Specifies whether a ai-service deployment and service should be created
   create: false
-  modelDeploymentName: ""
+  modelDeploymentName: "gpt-5-mini" # required if using Azure OpenAI
   openAiEndpoint: ""
   openAiKey: ""
   openAiOrgId: ""
@@ -24,6 +24,7 @@ aiService:
   openAiDalleEndpoint: ""
   openAiDalleModelName: ""
   azureOpenAiApiVersion: "2024-12-01-preview"
+  temperature: 1 # optional, set the temperature for the generated descriptions, default is 1 for gpt-5-mini
   image:
     repository: "ghcr.io/azure-samples/aks-store-demo/ai-service"
     tag: "" # defaults to Chart.AppVersion

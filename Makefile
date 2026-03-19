@@ -7,6 +7,8 @@ AKS_NAME ?= aks-store-demo-$(RANDOM)
 AOAI_NAME ?= aoai-store-demo-$(RANDOM)
 AOAI_MODEL_NAME ?= gpt-5-mini
 AOAI_MODEL_VERSION ?= 2025-08-07
+AOAI_API_VERSION ?= 2024-12-01-preview
+TEMPERATURE ?= 1
 AOAI_MODEL_CAPACITY ?= 8
 AOAI_MODEL_SKU ?= GlobalStandard
 BUILD_ORDER_SERVICE ?= false
@@ -139,6 +141,8 @@ deploy-azure-ai: deploy-azure kustomize ai-service.yaml ## Deploy ai-service to 
 	@echo "USE_AZURE_AD=False" >> .env
 	@echo "AZURE_OPENAI_DEPLOYMENT_NAME=$(AOAI_MODEL_NAME)" >> .env
 	@echo "AZURE_OPENAI_ENDPOINT=$$(az cognitiveservices account show -n $(AOAI_NAME) -g $(RG_NAME) --query properties.endpoint -o tsv)" >> .env
+	@echo "AZURE_OPENAI_API_VERSION=$(AZURE_OPENAI_API_VERSION)" >> .env
+	@echo "TEMPERATURE=$(TEMPERATURE)" >> .env
 	@echo "OPENAI_API_KEY=$$(az cognitiveservices account keys list -n $(AOAI_NAME) -g $(RG_NAME) --query key1 -o tsv)" >> .env
 
 	@# Add configMapGenerator and patches to kustomization.yaml

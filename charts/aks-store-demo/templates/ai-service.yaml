@@ -30,6 +30,7 @@ data:
   AZURE_OPENAI_DALLE_ENDPOINT: "{{ .Values.aiService.openAiDalleEndpoint }}"
   AZURE_OPENAI_DALLE_DEPLOYMENT_NAME: "{{ .Values.aiService.openAiDalleModelName }}"
   AZURE_OPENAI_API_VERSION: "{{ .Values.aiService.azureOpenAiApiVersion }}"
+  TEMPERATURE: "{{ .Values.aiService.temperature }}"
   {{- end }}
 ---
 {{- /*
