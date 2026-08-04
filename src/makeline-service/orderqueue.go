@@ -17,7 +17,9 @@ func unmarshalOrderFromQueue(data []byte) (Order, error) {
 	}
 
 	// add orderkey to order
-	order.OrderID = strconv.Itoa(rand.Intn(100000))
+	if order.OrderID == "" {
+		order.OrderID = strconv.Itoa(rand.Intn(100000))
+	}
 
 	// set the status to pending
 	order.Status = Pending

@@ -161,23 +161,13 @@ func updateOrder(c *gin.Context) {
 		return
 	}
 
-	id, err := strconv.Atoi(order.OrderID)
-	if err != nil {
-		log.Printf("Failed to convert order id to int: %s", err)
+	if order.OrderID == "" {
+		log.Printf("Order ID is empty")
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	sanitizedOrderId := strconv.FormatInt(int64(id), 10)
-
-	sanitizedOrder := Order{
-		OrderID:    sanitizedOrderId,
-		CustomerID: order.CustomerID,
-		Items:      order.Items,
-		Status:     order.Status,
-	}
-
-	err = client.repo.UpdateOrder(sanitizedOrder)
+	err := client.repo.UpdateOrder(order)
 	if err != nil {
 		log.Printf("Failed to update order status: %s", err)
 		c.AbortWithStatus(http.StatusInternalServerError)
