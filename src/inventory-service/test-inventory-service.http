@@ -1,0 +1,30 @@
+### Health
+GET http://127.0.0.1:7001/health
+
+### Get inventory for product 1
+GET http://127.0.0.1:7001/inventory/1
+
+### Reserve 2 units of product 1
+POST http://127.0.0.1:7001/inventory/1/reserve
+content-type: application/json
+
+{
+  "orderId": "order-1",
+  "quantity": 2,
+  "idempotencyKey": "order-1:1:2",
+  "workflowId": "order-1"
+}
+
+### List proposals
+GET http://127.0.0.1:7001/proposals
+
+### Create reorder proposal directly
+POST http://127.0.0.1:7001/proposals/reorder
+content-type: application/json
+
+{
+  "productId": 1,
+  "quantity": 25,
+  "workflowId": "order-2",
+  "reason": "manual test proposal"
+}

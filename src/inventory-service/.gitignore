@@ -1,0 +1,12 @@
+# uv virtual environment and development directories
+.venv/
+.uv/
+
+# Python build artifacts and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+build/
+dist/
+*.egg-info/
