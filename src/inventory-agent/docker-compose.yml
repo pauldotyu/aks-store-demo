@@ -1,0 +1,213 @@
+services:
+  inventory-service:
+    build: ../inventory-service
+    container_name: inventory-service
+    restart: always
+    ports:
+      - "7001:7001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:7001/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    environment:
+      - INVENTORY_SEED_PRODUCT_COUNT=10
+      - INVENTORY_SEED_AVAILABLE=100
+      - INVENTORY_SEED_REORDER_THRESHOLD=50
+      - INVENTORY_SEED_REORDER_QUANTITY=25
+    networks:
+      - backend
+
+  inventory-agent:
+    build: .
+    container_name: inventory-agent
+    restart: always
+    ports:
+      - "7002:7002"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:7002/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    environment:
+      - INVENTORY_SERVICE_URL=http://inventory-service:7001
+      - USE_WORKLOAD_IDENTITY_AUTH=false
+      - AZURE_OPENAI_ENDPOINT=
+      - AZURE_OPENAI_CHAT_MODEL=
+      - AZURE_OPENAI_API_VERSION=
+      - OPENAI_BASE_URL=http://host.docker.internal:11434/v1
+      - OPENAI_CHAT_MODEL=gpt-oss:20b
+      - OPENAI_API_KEY=none
+      - ENABLE_INSTRUMENTATION=${ENABLE_INSTRUMENTATION:-false}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=inventory-agent
+      - OTEL_INSTRUMENTATION_A2A_SDK_ENABLED=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - backend
+    depends_on:
+      inventory-service:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Telemetry profile: LGTM stack (Loki + Grafana + Tempo + Prometheus)
+  # Run with: docker compose --profile telemetry up
+  # Also set ENABLE_INSTRUMENTATION=true to activate OTel in the agent.
+  # ---------------------------------------------------------------------------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.157.0
+    profiles: ["telemetry"]
+    restart: unless-stopped
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ../../observability/lgtm/otel-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    environment:
+      - OTEL_LOG_LEVEL=info
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
+    networks:
+      - backend
+
+  loki:
+    image: grafana/loki:3.7.4
+    profiles: ["telemetry"]
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ../../observability/lgtm/loki-config.yaml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - backend
+
+  tempo:
+    image: grafana/tempo:3.0.2
+    profiles: ["telemetry"]
+    restart: unless-stopped
+    user: "root"
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ../../observability/lgtm/tempo-config.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/tmp/tempo
+    ports:
+      - "3200:3200"
+      - "4319:4317"
+    networks:
+      - backend
+
+  prometheus:
+    image: prom/prometheus:v3.13.2
+    profiles: ["telemetry"]
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--enable-feature=exemplar-storage"
+    volumes:
+      - ../../observability/lgtm/prometheus-config.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana:13.1.1
+    profiles: ["telemetry"]
+    restart: unless-stopped
+    environment:
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_BASIC_ENABLED=false
+    ports:
+      - "3000:3000"
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Loki
+          uid: loki
+          type: loki
+          access: proxy
+          orgId: 1
+          url: http://loki:3100
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
+        - name: Tempo
+          uid: tempo
+          type: tempo
+          access: proxy
+          orgId: 1
+          url: http://tempo:3200
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
+          jsonData:
+            tracesToLogsV2:
+              datasourceUid: 'loki'
+              spanStartTimeShift: '-1h'
+              spanEndTimeShift: '1h'
+              filterByTraceID: true
+              filterBySpanID: false
+            tracesToMetrics:
+              datasourceUid: 'prometheus'
+            serviceMap:
+              datasourceUid: 'prometheus'
+        - name: Prometheus
+          uid: prometheus
+          type: prometheus
+          access: proxy
+          orgId: 1
+          url: http://prometheus:9090
+          basicAuth: false
+          isDefault: true
+          version: 1
+          editable: false
+          jsonData:
+            exemplarTraceIdDestinations:
+              - name: trace_id
+                datasourceUid: tempo
+        EOF
+        /run.sh
+    networks:
+      - backend
+    depends_on:
+      - loki
+      - tempo
+      - prometheus
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  tempo_data:
+    driver: local
+  prometheus_data:
+    driver: local
