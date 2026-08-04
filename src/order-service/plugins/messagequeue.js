@@ -6,31 +6,50 @@ const rhea = require('rhea')
 
 let rabbitEnvironment = null
 let rabbitConnection = null
-let rabbitPublisher = null
-let initPromise = null
+let rabbitConnectPromise = null
+const rabbitPublishers = new Map()
+const initPromises = new Map()
 
-async function ensureRabbitPublisher() {
-  if (rabbitPublisher) return rabbitPublisher
+async function ensureRabbitConnection() {
+  if (rabbitConnection) return rabbitConnection
+  if (rabbitConnectPromise) return rabbitConnectPromise
+
+  rabbitConnectPromise = (async () => {
+    const host = process.env.ORDER_QUEUE_HOSTNAME
+    const port = parseInt(process.env.ORDER_QUEUE_PORT, 10) || 5672
+
+    const env = rabbit.createEnvironment({
+      host,
+      port,
+      username: process.env.ORDER_QUEUE_USERNAME,
+      password: process.env.ORDER_QUEUE_PASSWORD,
+    })
+
+    try {
+      const conn = await env.createConnection()
+      rabbitEnvironment = env
+      rabbitConnection = conn
+      return conn
+    } catch (err) {
+      await env.close().catch(() => {})
+      throw err
+    } finally {
+      rabbitConnectPromise = null
+    }
+  })()
+
+  return rabbitConnectPromise
+}
+
+async function ensureRabbitPublisher(queueName) {
+  if (rabbitPublishers.has(queueName)) return rabbitPublishers.get(queueName)
 
   // Coalesce concurrent calls into a single init attempt
-  if (initPromise) return initPromise
+  if (initPromises.has(queueName)) return initPromises.get(queueName)
 
-  initPromise = (async () => {
-    let env = null
-    let conn = null
+  const initPromise = (async () => {
     try {
-      const queueName = process.env.ORDER_QUEUE_NAME
-      const host = process.env.ORDER_QUEUE_HOSTNAME
-      const port = parseInt(process.env.ORDER_QUEUE_PORT, 10) || 5672
-
-      env = rabbit.createEnvironment({
-        host,
-        port,
-        username: process.env.ORDER_QUEUE_USERNAME,
-        password: process.env.ORDER_QUEUE_PASSWORD,
-      })
-
-      conn = await env.createConnection()
+      const conn = await ensureRabbitConnection()
 
       const management = conn.management()
       await management.declareQueue(queueName, { type: 'classic' })
@@ -40,21 +59,70 @@ async function ensureRabbitPublisher() {
         queue: { name: queueName },
       })
 
-      rabbitEnvironment = env
-      rabbitConnection = conn
-      rabbitPublisher = publisher
+      rabbitPublishers.set(queueName, publisher)
       return publisher
     } catch (err) {
-      // Clean up partially created resources
-      if (conn) await conn.close().catch(() => {})
-      if (env) await env.close().catch(() => {})
       throw err
     } finally {
-      initPromise = null
+      initPromises.delete(queueName)
     }
   })()
 
+  initPromises.set(queueName, initPromise)
   return initPromise
+}
+
+async function publishQueueMessage(message, queueName) {
+  const body = message.toString()
+  const hostname = process.env.ORDER_QUEUE_HOSTNAME || ''
+  const isServiceBus = hostname.endsWith('.servicebus.windows.net')
+
+  if (process.env.ORDER_QUEUE_USERNAME && process.env.ORDER_QUEUE_PASSWORD && !isServiceBus) {
+    console.log(`sending message ${body} to ${queueName} on ${hostname} using local auth credentials`)
+
+    const publisher = await ensureRabbitPublisher(queueName)
+    const dataBody = rhea.message.data_section(Buffer.from(body, 'utf8'))
+    const publishResult = await publisher.publish(
+      rabbit.createAmqpMessage({ body: dataBody })
+    )
+    if (publishResult.outcome !== rabbit.OutcomeState.ACCEPTED) {
+      throw new Error(`message not accepted by RabbitMQ, outcome: ${publishResult.outcome}`)
+    }
+    console.log(`message accepted by RabbitMQ for queue "${queueName}"`)
+    return
+  }
+
+  if (isServiceBus || process.env.USE_WORKLOAD_IDENTITY_AUTH === 'true') {
+    const { ServiceBusClient } = require('@azure/service-bus')
+    const fullyQualifiedNamespace = hostname || process.env.AZURE_SERVICEBUS_FULLYQUALIFIEDNAMESPACE
+
+    if (!fullyQualifiedNamespace) {
+      throw new Error('no hostname set for message queue')
+    }
+
+    let credential
+    if (process.env.ORDER_QUEUE_USERNAME && process.env.ORDER_QUEUE_PASSWORD) {
+      const { AzureNamedKeyCredential } = require('@azure/core-auth')
+      credential = new AzureNamedKeyCredential(process.env.ORDER_QUEUE_USERNAME, process.env.ORDER_QUEUE_PASSWORD)
+      console.log(`sending message ${body} to ${queueName} on ${fullyQualifiedNamespace} using SAS key credentials`)
+    } else {
+      const { DefaultAzureCredential } = require('@azure/identity')
+      credential = new DefaultAzureCredential()
+      console.log(`sending message ${body} to ${queueName} on ${fullyQualifiedNamespace} using Microsoft Entra ID Workload Identity credentials`)
+    }
+
+    const sbClient = new ServiceBusClient(fullyQualifiedNamespace, credential)
+    const sender = sbClient.createSender(queueName)
+    try {
+      await sender.sendMessages({ body: body })
+    } finally {
+      await sender.close()
+      await sbClient.close()
+    }
+    return
+  }
+
+  throw new Error('no credentials set for message queue')
 }
 
 module.exports = fp(async function (fastify, opts) {
@@ -63,7 +131,10 @@ module.exports = fp(async function (fastify, opts) {
   const isServiceBus = hostname.endsWith('.servicebus.windows.net')
   if (process.env.ORDER_QUEUE_USERNAME && process.env.ORDER_QUEUE_PASSWORD && !isServiceBus) {
     try {
-      await ensureRabbitPublisher()
+      await ensureRabbitPublisher(process.env.ORDER_QUEUE_NAME)
+      if (process.env.AGENT_ORDER_QUEUE_NAME) {
+        await ensureRabbitPublisher(process.env.AGENT_ORDER_QUEUE_NAME)
+      }
       console.log(`connected to RabbitMQ at ${hostname}:${process.env.ORDER_QUEUE_PORT}, queue "${process.env.ORDER_QUEUE_NAME}" declared`)
     } catch (err) {
       console.error('failed to initialize RabbitMQ connection:', err.message)
@@ -71,10 +142,10 @@ module.exports = fp(async function (fastify, opts) {
   }
 
   fastify.addHook('onClose', async () => {
-    if (rabbitPublisher) {
-      rabbitPublisher.close()
-      rabbitPublisher = null
+    for (const publisher of rabbitPublishers.values()) {
+      publisher.close()
     }
+    rabbitPublishers.clear()
     if (rabbitConnection) {
       await rabbitConnection.close()
       rabbitConnection = null
@@ -86,55 +157,14 @@ module.exports = fp(async function (fastify, opts) {
   })
 
   fastify.decorate('sendMessage', async function (message) {
-    const body = message.toString()
-    const hostname = process.env.ORDER_QUEUE_HOSTNAME || ''
-    const isServiceBus = hostname.endsWith('.servicebus.windows.net')
+    await publishQueueMessage(message, process.env.ORDER_QUEUE_NAME)
+  })
 
-    if (process.env.ORDER_QUEUE_USERNAME && process.env.ORDER_QUEUE_PASSWORD && !isServiceBus) {
-      console.log(`sending message ${body} to ${process.env.ORDER_QUEUE_NAME} on ${hostname} using local auth credentials`)
-
-      const publisher = await ensureRabbitPublisher()
-      const dataBody = rhea.message.data_section(Buffer.from(body, 'utf8'))
-      const publishResult = await publisher.publish(
-        rabbit.createAmqpMessage({ body: dataBody })
-      )
-      if (publishResult.outcome === rabbit.OutcomeState.ACCEPTED) {
-        console.log('message accepted by RabbitMQ')
-      } else {
-        throw new Error(`message not accepted by RabbitMQ, outcome: ${publishResult.outcome}`)
-      }
-    } else if (isServiceBus || process.env.USE_WORKLOAD_IDENTITY_AUTH === 'true') {
-      const { ServiceBusClient } = require("@azure/service-bus")
-      const fullyQualifiedNamespace = hostname || process.env.AZURE_SERVICEBUS_FULLYQUALIFIEDNAMESPACE
-      const queueName = process.env.ORDER_QUEUE_NAME
-
-      if (!fullyQualifiedNamespace) {
-        console.log('no hostname set for message queue. exiting.')
-        return
-      }
-
-      let credential
-      if (process.env.ORDER_QUEUE_USERNAME && process.env.ORDER_QUEUE_PASSWORD) {
-        const { AzureNamedKeyCredential } = require("@azure/core-auth")
-        credential = new AzureNamedKeyCredential(process.env.ORDER_QUEUE_USERNAME, process.env.ORDER_QUEUE_PASSWORD)
-        console.log(`sending message ${body} to ${queueName} on ${fullyQualifiedNamespace} using SAS key credentials`)
-      } else {
-        const { DefaultAzureCredential } = require("@azure/identity")
-        credential = new DefaultAzureCredential()
-        console.log(`sending message ${body} to ${queueName} on ${fullyQualifiedNamespace} using Microsoft Entra ID Workload Identity credentials`)
-      }
-
-      const sbClient = new ServiceBusClient(fullyQualifiedNamespace, credential)
-      const sender = sbClient.createSender(queueName)
-      try {
-        await sender.sendMessages({ body: body })
-      } finally {
-        await sender.close()
-        await sbClient.close()
-      }
-    } else {
-      console.log('no credentials set for message queue. exiting.')
+  fastify.decorate('sendAgentMessage', async function (message) {
+    const queueName = process.env.AGENT_ORDER_QUEUE_NAME
+    if (!queueName) {
       return
     }
+    await publishQueueMessage(message, queueName)
   })
 })

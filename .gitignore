@@ -151,3 +151,6 @@ custom-values.yaml
 kind
 kustomize
 kustomization.yaml
+
+# tap test runner artifacts
+.tap/
