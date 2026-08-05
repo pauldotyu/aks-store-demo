@@ -91,6 +91,14 @@ if ($env:AZURE_SERVICE_BUS_HOST) {
 "@ | Out-File -FilePath custom-values.yaml -Append -Encoding utf8
 }
 
+# Add Azure Service Bus to order-agent if provided
+if ($env:AZURE_SERVICE_BUS_HOST) {
+@"
+orderAgent:
+  queueHost: ${env:AZURE_SERVICE_BUS_HOST}
+"@ | Out-File -FilePath custom-values.yaml -Append -Encoding utf8
+}
+
 ###########################################################
 # Add makeline-service
 ###########################################################

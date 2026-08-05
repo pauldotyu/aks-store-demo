@@ -93,6 +93,14 @@ if [ -n "${AZURE_SERVICE_BUS_HOST}" ]; then
 EOF
 fi
 
+# Add Azure Service Bus to order-agent if provided
+if [ -n "${AZURE_SERVICE_BUS_HOST}" ]; then
+  cat << EOF >> custom-values.yaml
+orderAgent:
+  queueHost: ${AZURE_SERVICE_BUS_HOST}
+EOF
+fi
+
 ###########################################################
 # Add makeline-service
 ###########################################################

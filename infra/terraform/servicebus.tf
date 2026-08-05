@@ -10,7 +10,8 @@ module "sb" {
   local_auth_enabled  = false
 
   queues = {
-    orders = {}
+    orders         = {}
+    "agent-orders" = {}
   }
 
   # network_rule_config = {

@@ -19,6 +19,9 @@ module serviceBusNamespace 'br/public:avm/res/service-bus/namespace:0.15.0' = {
       {
         name: 'orders'
       }
+      {
+        name: 'agent-orders'
+      }
     ]
     // networkRuleSets: {
     //   ipRules: [

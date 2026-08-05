@@ -13,6 +13,9 @@ useAzureAd: false # when true, Azure AD auth will be used for ai-service, order-
 managedIdentityName: "" # name of the Azure AD identity to use for the service account
 managedIdentityClientId: "" # client ID of the managed identity to use for the service account
 
+agents:
+  enabled: false
+
 aiService:
   # Specifies whether a ai-service deployment and service should be created
   create: false
@@ -35,6 +38,7 @@ orderService:
   queueUsername: "username"
   queuePassword: "password"
   queueName: "orders"
+  agentQueueName: "agent-orders"
   image:
     repository: "ghcr.io/azure-samples/aks-store-demo/order-service"
     tag: "" # defaults to Chart.AppVersion
@@ -60,6 +64,51 @@ makelineService:
 productService:
   image:
     repository: "ghcr.io/azure-samples/aks-store-demo/product-service"
+    tag: "" # defaults to Chart.AppVersion
+
+inventoryService:
+  seedProductCount: "10"
+  seedAvailable: "100"
+  seedReorderThreshold: "50"
+  seedReorderQuantity: "25"
+  image:
+    repository: "ghcr.io/azure-samples/aks-store-demo/inventory-service"
+    tag: "" # defaults to Chart.AppVersion
+
+inventoryAgent:
+  inventoryServiceUrl: "http://inventory-service:7001"
+  useWorkloadIdentityAuth: "false"
+  azureOpenAiEndpoint: ""
+  azureOpenAiChatModel: ""
+  azureOpenAiApiVersion: "2024-12-01-preview"
+  openAiBaseUrl: "http://ollama.default.svc.cluster.local:11434/v1"
+  openAiChatModel: "gpt-oss:20b"
+  openAiApiKey: "none"
+  image:
+    repository: "ghcr.io/azure-samples/aks-store-demo/inventory-agent"
+    tag: "" # defaults to Chart.AppVersion
+
+orderAgent:
+  queueUri: "amqp://rabbitmq:5672"
+  queueHost: "rabbitmq"
+  queuePort: "5672"
+  queueUsername: "username"
+  queuePassword: "password"
+  queueName: "agent-orders"
+  inventoryAgentA2aUrl: "http://inventory-agent:7002"
+  modelProvider: "none" # none|local|foundry
+  openAiBaseUrl: "http://ollama.default.svc.cluster.local:11434/v1"
+  openAiChatModel: "gpt-oss:20b"
+  openAiApiKey: "none"
+  foundryOpenAiBaseUrl: ""
+  foundryOpenAiChatModel: ""
+  foundryOpenAiApiKey: ""
+  azureOpenAiEndpoint: ""
+  azureOpenAiChatModel: ""
+  azureOpenAiApiVersion: "2024-12-01-preview"
+  enableInstrumentation: "false"
+  image:
+    repository: "ghcr.io/azure-samples/aks-store-demo/order-agent"
     tag: "" # defaults to Chart.AppVersion
 
 storeAdmin:

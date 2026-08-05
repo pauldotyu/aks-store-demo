@@ -1,0 +1,123 @@
+{{- if eq .Values.agents.enabled true }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-agent-configs
+data:
+  {{- if eq .Values.useAzureAd true }}
+  USE_WORKLOAD_IDENTITY_AUTH: "true"
+  {{- end }}
+  ORDER_QUEUE_URI: "{{ .Values.orderAgent.queueUri }}"
+  ORDER_QUEUE_HOSTNAME: "{{ .Values.orderAgent.queueHost }}"
+  ORDER_QUEUE_PORT: "{{ .Values.orderAgent.queuePort }}"
+  ORDER_QUEUE_NAME: "{{ .Values.orderAgent.queueName }}"
+  INVENTORY_AGENT_A2A_URL: "{{ .Values.orderAgent.inventoryAgentA2aUrl }}"
+  ORDER_AGENT_MODEL_PROVIDER: "{{ .Values.orderAgent.modelProvider }}"
+  OPENAI_BASE_URL: "{{ .Values.orderAgent.openAiBaseUrl }}"
+  OPENAI_CHAT_MODEL: "{{ .Values.orderAgent.openAiChatModel }}"
+  FOUNDRY_OPENAI_BASE_URL: "{{ .Values.orderAgent.foundryOpenAiBaseUrl }}"
+  FOUNDRY_OPENAI_CHAT_MODEL: "{{ .Values.orderAgent.foundryOpenAiChatModel }}"
+  AZURE_OPENAI_ENDPOINT: "{{ .Values.orderAgent.azureOpenAiEndpoint }}"
+  AZURE_OPENAI_CHAT_MODEL: "{{ .Values.orderAgent.azureOpenAiChatModel }}"
+  AZURE_OPENAI_API_VERSION: "{{ .Values.orderAgent.azureOpenAiApiVersion }}"
+  ENABLE_INSTRUMENTATION: "{{ .Values.orderAgent.enableInstrumentation }}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: order-agent-secrets
+data:
+  {{- if eq .Values.useAzureAd false }}
+  ORDER_QUEUE_USERNAME: "{{ .Values.orderAgent.queueUsername | b64enc }}"
+  ORDER_QUEUE_PASSWORD: "{{ .Values.orderAgent.queuePassword | b64enc }}"
+  {{- end }}
+  OPENAI_API_KEY: "{{ .Values.orderAgent.openAiApiKey | b64enc }}"
+  FOUNDRY_OPENAI_API_KEY: "{{ .Values.orderAgent.foundryOpenAiApiKey | b64enc }}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-agent
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: order-agent
+  template:
+    metadata:
+      labels:
+        app: order-agent
+        {{- if eq .Values.useAzureAd true }}
+        azure.workload.identity/use: "true"
+        {{- end }}
+    spec:
+      {{- if eq .Values.useAzureAd true }}
+      serviceAccount: {{ .Values.managedIdentityName }}
+      {{- end }}
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: order-agent
+        image: {{ .Values.orderAgent.image.repository }}:{{ .Values.orderAgent.image.tag | default .Chart.AppVersion }}
+        ports:
+        - containerPort: 7003
+        envFrom:
+        - configMapRef:
+            name: order-agent-configs
+        - secretRef:
+            name: order-agent-secrets
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 7003
+          failureThreshold: 10
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 7003
+          failureThreshold: 3
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 7003
+          failureThreshold: 5
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      {{- if eq .Values.useRabbitMQ true }}
+      initContainers:
+      - name: wait-for-rabbitmq
+        image: busybox:1.37.0
+        command: ['sh', '-c', 'until nc -zv rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done;']
+        resources:
+          requests:
+            cpu: 1m
+            memory: 50Mi
+          limits:
+            cpu: 75m
+            memory: 128Mi
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-agent
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 7003
+    targetPort: 7003
+  selector:
+    app: order-agent
+{{- end }}

@@ -10,6 +10,9 @@ data:
   {{- end }}
   ORDER_QUEUE_HOSTNAME: "{{ .Values.orderService.queueHost }}"
   ORDER_QUEUE_NAME: "{{ .Values.orderService.queueName }}"
+  {{- if and (eq .Values.agents.enabled true) .Values.orderService.agentQueueName }}
+  AGENT_ORDER_QUEUE_NAME: "{{ .Values.orderService.agentQueueName }}"
+  {{- end }}
   FASTIFY_ADDRESS: "0.0.0.0"
 ---
 {{- if eq .Values.useAzureAd false }}
