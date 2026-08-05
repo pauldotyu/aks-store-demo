@@ -1,0 +1,45 @@
+### Health
+# Includes consumer connection state, processed/failed counts, and last model result.
+GET http://127.0.0.1:7003/health
+
+###
+
+### Publish test message via RabbitMQ management API
+# Publishes a synthetic order event directly to the agent-orders queue.
+# The agent will pick it up, call inventory-agent via A2A, and optionally run
+# a model assessment depending on ORDER_AGENT_MODEL_PROVIDER.
+POST http://127.0.0.1:15672/api/exchanges/%2F/amq.default/publish
+Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+Content-Type: application/json
+
+{
+  "properties": {},
+  "routing_key": "agent-orders",
+  "payload": "{\"orderId\":\"order-test-1\",\"correlationId\":\"corr-1\",\"eventId\":\"evt-1\",\"eventType\":\"order.created\",\"eventVersion\":\"1.0\",\"customerId\":\"customer-1\",\"createdAt\":\"2026-08-03T00:00:00Z\",\"items\":[{\"productId\":1,\"quantity\":2,\"price\":10.0}]}",
+  "payload_encoding": "string"
+}
+
+###
+
+### Publish second message (different order ID to avoid idempotency collisions)
+POST http://127.0.0.1:15672/api/exchanges/%2F/amq.default/publish
+Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+Content-Type: application/json
+
+{
+  "properties": {},
+  "routing_key": "agent-orders",
+  "payload": "{\"orderId\":\"order-test-2\",\"correlationId\":\"corr-2\",\"eventId\":\"evt-2\",\"eventType\":\"order.created\",\"eventVersion\":\"1.0\",\"customerId\":\"customer-2\",\"createdAt\":\"2026-08-03T00:00:00Z\",\"items\":[{\"productId\":1,\"quantity\":1,\"price\":10.0}]}",
+  "payload_encoding": "string"
+}
+
+###
+
+### Check queue depth (confirm messages are being consumed)
+GET http://127.0.0.1:15672/api/queues/%2F/agent-orders
+Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+
+###
+
+### Health check after processing (confirm processed count incremented)
+GET http://127.0.0.1:7003/health

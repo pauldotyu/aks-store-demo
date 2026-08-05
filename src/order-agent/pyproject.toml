@@ -1,0 +1,20 @@
+[project]
+name = "order-agent"
+version = "0.1.0"
+description = "Order queue consumer and Agent Framework assessor for the optional agents feature"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi==0.139.2",
+    "uvicorn==0.52.1",
+    "pydantic==2.13.4",
+    "requests==2.34.2",
+    "pika==1.4.2",
+    "azure-identity>=1.25.3",
+    "azure-servicebus>=7.14.3",
+    "agent-framework>=1.13.0",
+    "a2a-sdk>=1.1.2",
+    "httpx>=0.28.1",
+    "python-dotenv==1.2.2",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.43.0",
+]
